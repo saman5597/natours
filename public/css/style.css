@@ -1323,3 +1323,13 @@ body {
   -webkit-transform: translateY(-2px);
   transform: translateY(-2px);
 }
+
+/* My CSS */
+
+.anchorTagCustom{
+  font-size: 1.5rem;
+  color: #55c57a;
+  font-weight: 550;
+  float: right;
+  margin-top: 8px;
+}

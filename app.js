@@ -8,6 +8,7 @@ const xss = require('xss-clean');
 const hpp = require('hpp'); //Http Parameter Pollution
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const compression = require('compression');
 
 const AppErrorHandler = require('./util/errorHandler');
 const globalErrorHandler = require('./controllers/errorController');
@@ -15,16 +16,27 @@ const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
 const bookingRouter = require('./routes/bookingRoutes');
+const bookingController = require('./controllers/bookingController');
 const viewRouter = require('./routes/viewRoutes');
 
 //Start express app
-
 const app = express();
+
+app.enable('trust proxy');
 
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
 
 //Global Middlewares
+app.use(cors()); //for CORS
+// app.use(
+//   cors({
+//     origin: 'https://www.natours.com'
+//   })
+// );
+
+app.options('*', cors());
+// app.options('/api/v1/tours', cors());
 
 // Serving Static files
 // app.use(express.static(`${__dirname}/public`));
@@ -33,12 +45,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Set Security HTTP Headers
 app.use(helmet()); // XSS Scripting
 
-app.use(cors());
-
 // Req meta-data (req-time , status etc.) Development logging
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+app.post(
+  '/webhook-checkout',
+  express.raw({ type: 'application/json' }),
+  bookingController.webhookCheckout
+); //putting before body parser bcz we don't want req.body in JSON Format
 
 // Body-parsing , reading data from body into req.body
 app.use(express.json({ limit: '10kb' })); //will not accept data larger than 10kb
@@ -67,6 +83,8 @@ app.use(
     ]
   })
 );
+
+app.use(compression());
 
 //Test middleware
 app.use((req, res, next) => {

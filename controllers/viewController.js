@@ -5,12 +5,21 @@ const User = require('../models/userModel');
 const Booking = require('../models/bookingModel');
 const catchAsync = require('../util/catchAsync');
 
+exports.alerts = (req, res, next) => {
+  const { alert } = req.query;
+  if (alert === 'booking')
+    res.locals.alert =
+      "Your booking was successful! Please check your email for confirmation. If your booking doesn't show up here immediately, please come back later.";
+
+  next();
+};
+
 exports.getOverview = catchAsync(async (req, res, next) => {
   // 1) Get tour data
   try {
     const result = await axios({
       method: 'GET',
-      url: 'http://127.0.0.1:8000/api/v1/tours/'
+      url: `${req.protocol}://${req.get('host')}/api/v1/tours/`
     });
     // 2) Build template
     // 3) Render that template using the tour data from step 1
@@ -54,6 +63,18 @@ exports.getSignupForm = (req, res) => {
   });
 };
 
+exports.getForgotPasswordForm = (req, res) => {
+  res.status(200).render('forgotPassword', {
+    title: 'Forgot your password'
+  });
+};
+
+exports.getResetPasswordForm = (req, res) => {
+  res.status(200).render('resetPassword', {
+    title: 'Reset your password'
+  });
+};
+
 exports.getAccount = (req, res) => {
   res.status(200).render('account', {
     title: 'Your account'
@@ -67,7 +88,7 @@ exports.getMyTours = catchAsync(async (req, res, next) => {
   const tourIds = bookings.map(el => el.tour);
   const tours = await Tour.find({ _id: { $in: tourIds } });
 
-  res.status(200).render('overview',{
+  res.status(200).render('overview', {
     title: 'My Tours',
     tours
   });

@@ -5,13 +5,17 @@ import { signup } from './signup'
 import { login , logout } from './login';
 import { updateSettings } from './updateSettings';
 import { bookTour } from './stripe';
+import { showAlert } from './alerts';
+import { forgotPassword , resetPassword } from './forgotResetPassword';
 
-console.log('Bundle.js');
+// console.log('Bundle.js');
 
 //DOM ELEMENTS
 const mapBox = document.getElementById('map');
 const signupForm = document.querySelector('#signupForm');
 const loginForm = document.querySelector('#loginForm');
+const forgotPasswordForm = document.querySelector('#forgotPasswordForm');
+const resetPasswordForm = document.querySelector('#resetPasswordForm');
 const logoutBtn = document.querySelector('#logout');
 const updateDataForm = document.querySelector('#updateDataForm');
 const updatePwdForm = document.querySelector('#updatePwdForm');
@@ -46,6 +50,27 @@ if(loginForm){
         const password = document.getElementById('password').value;
         await login( email, password );
         document.querySelector('.btn--save-login').innerHTML = "Login";
+    });
+}
+
+if(forgotPasswordForm){
+    forgotPasswordForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        document.querySelector('.btn--save-sendEmail').innerHTML = "Please wait...";
+        const email = document.getElementById('email').value;
+        await forgotPassword(email);
+        document.querySelector('.btn--save-sendEmail').innerHTML = "Send Email";
+    });
+}
+
+if(resetPasswordForm){
+    resetPasswordForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        document.querySelector('.btn--save-resetPassword').innerHTML = "Please wait...";
+        const password = document.getElementById('password').value;
+        const passwordConfirm = document.getElementById('password-confirm').value;
+        await resetPassword(password, passwordConfirm);
+        document.querySelector('.btn--save-resetPassword').innerHTML = "Reset Password";
     });
 }
 
@@ -91,3 +116,6 @@ if(bookTourBtn){
         e.target.innerHTML = 'Book tour now!';
     })
 }
+
+const alertMessage = document.querySelector('body').dataset.alert;
+if(alertMessage) showAlert('success', alertMessage, 12);

@@ -13,20 +13,16 @@ const signToken = id => {
   });
 };
 
-const createAndSendToken = (user, statusCode, message, res) => {
+const createAndSendToken = (user, statusCode, message, req, res) => {
   const token = signToken(user._id);
 
-  const cookieOptions = {
+  res.cookie('jwt', token, {
     expires: new Date(
       Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
     ),
-    secure: false,
+    secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
     httpOnly: true
-  };
-
-  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
-
-  res.cookie('jwt', token, cookieOptions);
+  });
   // Remove pwd from output
   user.password = undefined;
   res.status(statusCode).json({
@@ -141,7 +137,7 @@ exports.signup = catchAsync(async (req, res, next) => {
   const url = `${req.protocol}://${req.get('host')}/me`;
   await new Email(newUser, url).sendWelcome();
 
-  createAndSendToken(newUser, 201, 'User signed up successfully.', res);
+  createAndSendToken(newUser, 201, 'User signed up successfully.', req, res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -156,7 +152,7 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppErrorHandler('Incorrect email or password.', 401));
   }
   // 3) If everything is ok, send the token back to client
-  createAndSendToken(user, 200, 'User logged in successfully.', res);
+  createAndSendToken(user, 200, 'User logged in successfully.', req, res);
 });
 
 exports.logout = (req, res) => {
@@ -184,9 +180,9 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   try {
     const resetURL = `${req.protocol}://${req.get(
       'host'
-    )}/api/v1/users/resetPassword/${resetToken}`;
+    )}/resetPassword?rt=${resetToken}`;
 
-    await new Email(user, resetURL).sendPasswordReset();
+    await new Email(user, resetURL, resetToken).sendPasswordReset();
 
     res.status(200).json({
       status: 'success',
@@ -228,7 +224,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   await user.save();
   // 3) Update changePasswordAt property for the user - Done in middleware (model)
   // 4) Log the user in , send token (JWT)
-  createAndSendToken(user, 200, 'User logged in with new password.', res);
+  createAndSendToken(user, 200, 'User logged in with new password.', req, res);
 });
 
 exports.changePassword = catchAsync(async (req, res, next) => {
@@ -245,5 +241,11 @@ exports.changePassword = catchAsync(async (req, res, next) => {
   user.passwordConfirm = req.body.passwordConfirm;
   await user.save();
   // 4) Log user in , send jwt (token)
-  createAndSendToken(user, 200, 'User logged in with updated password.', res);
+  createAndSendToken(
+    user,
+    200,
+    'User logged in with updated password.',
+    req,
+    res
+  );
 });
